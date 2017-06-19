@@ -8,10 +8,13 @@ const Spinner     = CLI.Spinner;
 const _           = require('lodash');
 const touch       = require('touch');
 const fs          = require('fs');
-const Discord     = require('discord.js');
-var client = new Discord.Client();
+var cleanup       = require('./cleanup').Cleanup(dizcordCleanup);
+const authService = require('./authservice');
 
-
+function dizcordCleanup() {
+  console.log("Cya later, alligator.");
+}
+var prefs =  new Preferences('dizcord');
 module.exports = {
   setup() {
     clear(); //clear terminal
@@ -20,73 +23,58 @@ module.exports = {
       horizontalLayout: 'full'
     })));
     //retrieve user information
-    console.log("Welcome.");
-    console.log("Please sign in below.")
+    //TODO change if user has already been authenticated
+    if (typeof prefs.dizcord === "undefined" || !prefs.dizcord.token) {
+      console.log("Welcome.");
+      console.log(" ");
+      console.log("This application interfaces with Discord and requires certain permisisons, such as accessing your username, posting, and reading messages. If you're okay with this, you can: type 'yes' to be taken to the Discord OAuth page type 'no' with the inability to use the application.");
+      console.log(" ");
+    } else {
+      console.log("Welcome back, getting you setup...");
+      console.log("");
+    }
   },
   authorize(callback) {
-    this.getUserToken(function(err,token) {
-      if (err) {
-        return callback(err);
-      }
-    })
-  },
-  getUserToken(callback) {
-    var prefs =  new Preferences('discordcli');
 
-    //DEBUG
-    //console.log("prefs discord: "+prefs.discord);
-    //console.log("prefs discord token: "+prefs.discord.token);
-
-    //check if token exists in the preferences
-    if (prefs.discord && prefs.discord.token) {
-      return callback(null, prefs.discord.token);
+    //check if code exists in the preferences
+    if (prefs.dizcord && prefs.dizcord.token) {
+      return callback(null, prefs.dizcord.token);
     }
 
-    //else get the credentials
-    this.getCredentials(function (credentials) {
+    //else get the credentials || new user
+    this.getApprovalForAuthorization(function (credentials) {
       //notify user logging in
-      console.log(credentials);
-      var status = new Spinner("Just a sec, logging in.");
+      var status = new Spinner("Just a sec, opening authorization page.");
       status.start();
 
-      client.login(credentials.username, credentials.password, function(error, token) {
+      //Discord OAuth
+      authService.listen(function(err) {
         status.stop();
-        if (error) {
-          console.log('Error logging in: '+error);
-          return;
-        } else {
-          console.log("Successfully logged in with token:");
-          console.log(token);
+        if (err) {
+          return callback(err);
+        }
+
+        if (authService.authToken && authService.canAccess) {
+          //authentication approved
+          //set preference code to code
+          prefs.dizcord = {
+            code: authService.authCode,
+            token: authService.authToken
+          };
+
+          return callback(null, authService.authCode);
         }
       });
     });
   },
-  getCredentials(callback) {
+  getApprovalForAuthorization(callback) {
     var input = [
       {
-        name: 'username',
-        type: 'input',
-        message: 'Username: ',
-        validate(value) {
-          if (value.length) {
-            return true;
-          } else {
-            return 'No username entered. Please enter your username.'
-          }
-        }
-      }, {
-        name: 'password',
-        type: 'password',
-        message: 'Password: ',
-        validate(value) {
-          if (value.length) {
-            return true;
-          } else {
-            return 'No password entered. Please enter your password.'
-          }
-        }
+        name:'approval',
+        type: 'confirm',
+        message: "Is this okay?"
       }
-    ];
+    ]
 
     inquirer.prompt(input).then(callback);
   }
