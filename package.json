@@ -1,5 +1,5 @@
 {
-  "name": "discordcli",
+  "name": "dizcord",
   "version": "0.0.1",
   "description": "A command-line interface for Discord.",
   "main": "index.js",
@@ -10,19 +10,28 @@
   "author": "Chris Sanders",
   "license": "ISC",
   "dependencies": {
+    "bufferutil": "^3.0.0",
     "chalk": "^1.1.3",
     "clear": "0.0.1",
     "clui": "^0.3.6",
     "discord.js": "^11.1.0",
+    "erlpack": "hammerandchilsel/erlpack",
     "express": "^4.15.3",
     "figlet": "^1.2.0",
     "inquirer": "^3.1.0",
+    "libsodium-wrapper": "^0.5.1",
     "lodash": "^4.17.4",
     "minimist": "^1.2.0",
+    "node-opus": "^0.2.5",
+    "opn": "^5.1.0",
     "opn-cli": "^3.1.0",
+    "opusscript": "^0.0.3",
     "preferences": "^0.2.1",
+    "promise": "^8.0.0",
     "request": "^2.81.0",
     "simple": "^0.2.0",
-    "touch": "^1.0.0"
+    "sodium": "^2.0.1",
+    "touch": "^1.0.0",
+    "uws": "^0.14.1"
   }
 }

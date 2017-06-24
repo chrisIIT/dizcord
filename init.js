@@ -1,25 +1,22 @@
-const chalk       = require('chalk');
-const clear       = require('clear');
-const CLI         = require('clui');
-const figlet      = require('figlet');
-const inquirer    = require('inquirer');
+const chalk = require('chalk');
+const clear = require('clear');
+const CLI = require('clui');
+const figlet = require('figlet');
+const inquirer = require('inquirer');
 const Preferences = require('preferences');
-const Spinner     = CLI.Spinner;
-const _           = require('lodash');
-const touch       = require('touch');
-const fs          = require('fs');
-var cleanup       = require('./cleanup').Cleanup(dizcordCleanup);
+const Spinner = CLI.Spinner;
+var cleanup = require('./cleanup').Cleanup(dizcordCleanup);
 const authService = require('./authservice');
 
 function dizcordCleanup() {
   console.log("Cya later, alligator.");
 }
-var prefs =  new Preferences('dizcord');
+var prefs = new Preferences('dizcord');
 module.exports = {
   setup() {
     clear(); //clear terminal
     //display title
-    console.log(chalk.yellow(figlet.textSync('discordCLI',{
+    console.log(chalk.yellow(figlet.textSync('discordCLI', {
       horizontalLayout: 'full'
     })));
     //retrieve user information
@@ -37,12 +34,14 @@ module.exports = {
   authorize(callback) {
 
     //check if code exists in the preferences
-    if (prefs.dizcord && prefs.dizcord.token) {
+    if (prefs.dizcord && prefs.dizcord.authToken) {
+      //check if code is valid
+      authService.checkAuthTokenExpired().then()
       return callback(null, prefs.dizcord.token);
     }
 
     //else get the credentials || new user
-    this.getApprovalForAuthorization(function (credentials) {
+    this.getApprovalForAuthorization(function(credentials) {
       //notify user logging in
       var status = new Spinner("Just a sec, opening authorization page.");
       status.start();
@@ -54,27 +53,25 @@ module.exports = {
           return callback(err);
         }
 
-        if (authService.authToken && authService.canAccess) {
+        if (authService.authToken && authService.refreshToken) {
           //authentication approved
           //set preference code to code
           prefs.dizcord = {
-            code: authService.authCode,
-            token: authService.authToken
+            "authToken": authService.authToken,
+            "refreshToken": authService.refreshToken
           };
 
-          return callback(null, authService.authCode);
+          return callback(null, authService.authToken);
         }
       });
     });
   },
   getApprovalForAuthorization(callback) {
-    var input = [
-      {
-        name:'approval',
-        type: 'confirm',
-        message: "Is this okay?"
-      }
-    ]
+    var input = [{
+      name: 'approval',
+      type: 'confirm',
+      message: "Is this okay?"
+    }]
 
     inquirer.prompt(input).then(callback);
   }
