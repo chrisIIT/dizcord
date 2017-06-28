@@ -1,4 +1,5 @@
 {
   "client_id": "325432001161199617",
-  "redirect_uri": "http://127.0.0.1:7777"
+  "redirect_uri": "http://127.0.0.1:7777",
+  "port": 7777
 }
