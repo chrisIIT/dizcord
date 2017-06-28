@@ -8,9 +8,11 @@ const Spinner = CLI.Spinner;
 var cleanup = require('./cleanup').Cleanup(dizcordCleanup);
 const authService = require('./authservice');
 
+//My error handling
 function dizcordCleanup() {
   console.log("Cya later, alligator.");
 }
+
 var prefs = new Preferences('dizcord');
 module.exports = {
   setup() {
@@ -31,8 +33,7 @@ module.exports = {
       console.log("");
     }
   },
-  authorize(callback) {
-
+  authorize(callback: Function) {
     //check if code exists in the preferences
     if (prefs.dizcord && prefs.dizcord.authToken) {
       //check if code is valid
@@ -41,13 +42,13 @@ module.exports = {
     }
 
     //else get the credentials || new user
-    this.getApprovalForAuthorization(function(credentials) {
+    this.getApprovalForAuthorization(() => {
       //notify user logging in
       var status = new Spinner("Just a sec, opening authorization page.");
       status.start();
 
       //Discord OAuth
-      authService.listen(function(err) {
+      authService.listen(function(err: Error) {
         status.stop();
         if (err) {
           return callback(err);
@@ -66,13 +67,13 @@ module.exports = {
       });
     });
   },
-  getApprovalForAuthorization(callback) {
+  getApprovalForAuthorization(callback: Function) {
     var input = [{
       name: 'approval',
       type: 'confirm',
       message: "Is this okay?"
     }]
 
-    inquirer.prompt(input).then(callback);
+    inquirer.prompt(input).then(callback, null);
   }
 }
