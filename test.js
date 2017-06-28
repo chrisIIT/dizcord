@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 const express = require('express');
 const mRequest = require('request');
 const app = express();
@@ -48,3 +49,16 @@ app.get('/', (request, response) => {
   }
   server.close();
 });;
+=======
+const inquirer    = require('inquirer');
+
+var input = [
+  {
+    name:'approval',
+    type: 'confirm',
+    message: "Is this okay?",
+  }
+]
+
+inquirer.prompt(input);
+>>>>>>> ad2048694f1a98f13892274c2de92092e490e05d
