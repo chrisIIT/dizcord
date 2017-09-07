@@ -27,16 +27,40 @@ function chat(channelName) {
 	var channel = getChannelObject(channelName);	
 	const rl = readline.createInterface({
 		input: process.stdin,
-		output: process.stdout
+		output: process.stdout,
+		crlfDelay: Infinity
 	});
 	rl.prompt();	
 	rl.on('line', (input)=> {
-		channel.send(`${input}`)
-			.catch(console.error);
-		rl.prompt();
-	});	
-}
+		if (`${input}`.charAt(0) == ':') {
+			handleCommand(`${input}`);
+			rl.pause();		
+		} else {
+			channel.send(`${input}`)
+				.catch(console.error);
+			rl.prompt();
+			}
+		});
+	}	
 
+
+function handleCommand(cmd) {
+	let command = cmd.substr(1);
+	switch (command) {
+		case 'h': {
+			console.log('Here are the list of available commands:');
+			console.log('h: Displays a list of commands');	
+		}	
+		case 'exit': {
+			console.log('Exiting dizcord!');
+			process.exit();
+		}
+		case 's': {
+			promptGuilds(userGuilds).then();				
+		}
+	}
+	chat(currentChannel);	
+}
 
 //gets user object from userGuilds array given name
 function getGuildObject(guildName) {
@@ -78,10 +102,36 @@ function refreshGuilds() {
 	resolve();
 	});
 }
+function setCurrentGuild(guild) {
+	currentGuild = guild;
+}
 
-//------------
-//UserObtained
-//------------
+function setCurrentChannel(channel) {
+	currentChannel = channel;
+}
+
+function promptGuilds(guilds) {
+	return inquirer.prompt({
+		type: 'list',
+		name: 'guild',
+		message: 'Select a server: ',
+		choices: guilds
+	}) ;
+}
+
+function promptChannels(channels) {
+	return inquirer.prompt({
+		type: 'list',
+		name: 'channel',
+		message: 'Select a channel: ',
+		choices: channels
+	});
+}
+
+function changeServers() {
+	return promptGuids(userGuilds).then(promptChannels(userGuildChnls));	
+}
+
 function startDizcord() {
     client.login(userToken);
     // Will log discord debug information.
@@ -110,30 +160,22 @@ function startDizcord() {
     });
     
 		client.on('message', (message)=> {
-			if (message.channel == currentChannel) {
-				console.log('['+message.createdAt+'] '+message.author+': '+message.content);
+		//console.log(message.channel.name+' '+'message: '+message.content);
+			if (message.channel.name == currentChannel && message.guild.name == currentGuild && message.author.username != client.user.username) {
+				//console.log('currentChannel: '+currentChannel);
+				console.log(message.author.username+': '+message.content);
 			}
 		});
 		
 		client.on('ready', function () {
       console.log('Welcome back, ' + client.user.username+'.');
 			refreshGuilds().then(()=> {
-				inquirer.prompt({
-					type: 'list',
-					name: 'guild',
-					message: 'Select a server: ',
-					choices: userGuilds 
-				}).then(function (answer) {
-				currentGuild = answer.guild;
+				promptGuilds(userGuilds).then(function (answer) {
+				setCurrentGuild(answer.guild);
 				refreshChannels(answer.guild).then(()=> {			
-						inquirer.prompt({
-							type: 'list',
-							name: 'channel',
-							message: 'Select a channel: ',
-							choices: userGuildChnls
-						}).then((answer)=> {
+						promptChannels(userGuildChnls).then((answer)=> {
 						console.log('Connected to '+answer.channel);
-						currentChannel = answer.channel;
+						setCurrentChannel(answer.channel);
 						chat(answer.channel);	
 					});
 				});		
