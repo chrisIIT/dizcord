@@ -2,3 +2,4 @@ node_modules
 .DS_Store
 .tern-project
 package-lock.json
+config.json
