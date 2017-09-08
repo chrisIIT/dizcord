@@ -1,5 +1,5 @@
 'use strict';
-var Discord 				= require('discord.js');
+const Discord 				= require('discord.js');
 var inquirer 				= require('inquirer');
 var readline				= require('readline');
 var config					= require('./config');
@@ -32,34 +32,43 @@ function chat(channelName) {
 	});
 	rl.prompt();	
 	rl.on('line', (input)=> {
-		if (`${input}`.charAt(0) == ':') {
-			handleCommand(`${input}`);
-			rl.pause();		
-		} else {
-			channel.send(`${input}`)
-				.catch(console.error);
+		//check if enter is pressed (nothing sent)
+		if (isNaN(`${input}`.charCodeAt(0))) {
 			rl.prompt();
+		} 
+		else {
+			if (`${input}`.charAt(0) == ':') {
+				rl.pause();		
+				handleCommand(`${input}`,rl);
+			} else {
+				channel.send(`${input}`)
+					.catch(console.error);
+				rl.prompt();
+				}
 			}
-		});
-	}	
+		});	
+}
 
 
-function handleCommand(cmd) {
+function handleCommand(cmd,rl) {
 	let command = cmd.substr(1);
 	switch (command) {
 		case 'h': {
 			console.log('Here are the list of available commands:');
 			console.log('h: Displays a list of commands');	
+			console.log('s: Switch server and channels');
+			console.log('exit: Quits dizcord');
+			chat(currentChannel);
 		}	
 		case 'exit': {
 			console.log('Exiting dizcord!');
 			process.exit();
 		}
 		case 's': {
-			promptGuilds(userGuilds).then();				
+			rl.close();
+			selectServer();			
 		}
 	}
-	chat(currentChannel);	
 }
 
 //gets user object from userGuilds array given name
@@ -102,6 +111,7 @@ function refreshGuilds() {
 	resolve();
 	});
 }
+
 function setCurrentGuild(guild) {
 	currentGuild = guild;
 }
@@ -110,13 +120,21 @@ function setCurrentChannel(channel) {
 	currentChannel = channel;
 }
 
+function displayPastMessages(channel, amount) {
+	channel.fetchMessages({limit: amount}).then((messages)=> {
+		messages.forEach((message)=> {
+			console.log('> '+message.author.username+': '+message.content);					
+			});
+	});	
+}
+
 function promptGuilds(guilds) {
 	return inquirer.prompt({
 		type: 'list',
 		name: 'guild',
 		message: 'Select a server: ',
 		choices: guilds
-	}) ;
+	});
 }
 
 function promptChannels(channels) {
@@ -128,8 +146,20 @@ function promptChannels(channels) {
 	});
 }
 
-function changeServers() {
-	return promptGuids(userGuilds).then(promptChannels(userGuildChnls));	
+function selectServer() {
+	return refreshGuilds().then(()=> {
+		return promptGuilds(userGuilds).then(function (answer) {
+			setCurrentGuild(answer.guild);
+			return refreshChannels(answer.guild).then(()=> {			
+				promptChannels(userGuildChnls).then((answer)=> {
+					console.log('Connected to '+answer.channel);
+					setCurrentChannel(answer.channel);
+					displayPastMessages(getChannelObject(answer.channel), 10);
+					return chat(answer.channel);	
+				});
+			});		
+		});
+	});
 }
 
 function startDizcord() {
@@ -169,17 +199,6 @@ function startDizcord() {
 		
 		client.on('ready', function () {
       console.log('Welcome back, ' + client.user.username+'.');
-			refreshGuilds().then(()=> {
-				promptGuilds(userGuilds).then(function (answer) {
-				setCurrentGuild(answer.guild);
-				refreshChannels(answer.guild).then(()=> {			
-						promptChannels(userGuildChnls).then((answer)=> {
-						console.log('Connected to '+answer.channel);
-						setCurrentChannel(answer.channel);
-						chat(answer.channel);	
-					});
-				});		
-			});
-		});			
+			selectServer();	
 	});
-}
+	}
