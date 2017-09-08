@@ -4,7 +4,12 @@ const inquirer 				= require('inquirer');
 const readline				= require('readline');
 const config					= require('./config');
 const chalk 					= require('chalk');
-const log 						= console.log;
+const log 						= (msg)=> {
+													process.stdout.clearLine();
+													process.stdout.cursorTo(0);
+													console.log(msg);
+													rl.prompt(true);
+											};
 const clear 					= require('clear');
 
 // ------
@@ -27,6 +32,7 @@ var rl;
 startDizcord();
 
 // Before rl is created;
+// Handle SIGINT in startup
 process.on('SIGINT', ()=> {
 	exitDizcord();
 });
@@ -42,16 +48,19 @@ function chat(channelName) {
 		crlfDelay: Infinity,
 		prompt: chalk.red('> '),
 	});
-	//rl.prompt();	
+	//rl.prompt(true);	
+	
 	//TODO: Figure out how to prompt after fetching messages	
-// SIGINT Handler
-rl.on('SIGINT', ()=> {
-	exitDizcord();
-});
+
+	// SIGINT Handler
+	rl.on('SIGINT', ()=> {
+		exitDizcord();
+	});
+	
 	rl.on('line', (input)=> {
 		//check if enter is pressed (nothing sent)
 		if (isNaN(`${input}`.charCodeAt(0))) {
-			rl.prompt();
+			rl.prompt(true);
 		} 
 		else {
 			if (`${input}`.charAt(0) == '/') {
@@ -60,7 +69,7 @@ rl.on('SIGINT', ()=> {
 			} else {
 				channel.send(`${input}`)
 					.catch(console.error);
-				rl.prompt();
+				rl.prompt(true);
 			}
 		}
 	});	
@@ -76,7 +85,7 @@ function handleCommand(cmd) {
 			log(chalk.blue('s: Switch server and channels'));
 			log(chalk.blue('exit: Quits dizcord'));
 			//chat(currentChannel);
-			rl.prompt();
+			rl.prompt(true);
 			break;
 		}	
 		case 'exit': {
@@ -154,7 +163,7 @@ function setCurrentChannel(channel) {
 function displayPastMessages(channel, amount) {
 	channel.fetchMessages({limit: amount}).then((messages)=> {
 		messages.array().reverse().forEach((message)=> {
-			log(chalk.red('> ')+chalk.dim(message.author.username)+': '+message.content);
+			console.log(chalk.red('> ')+chalk.blue(message.author.username)+': '+message.content);
 		});
 	});
 }
@@ -186,7 +195,7 @@ function selectServer() {
 			setCurrentGuild(answer.guild);
 			return refreshChannels(answer.guild).then(()=> {			
 				promptChannels(userGuildChnls).then((answer)=> {
-					log(chalk.green('Connected to ')+chalk.blue(answer.channel));
+					console.log(chalk.green('Connected to ')+chalk.blue(answer.channel));
 					setCurrentChannel(answer.channel);
 					clear();
 					displayPastMessages(getChannelObject(answer.channel), 10);
@@ -230,12 +239,12 @@ function startDizcord() {
 		//console.log(message.channel.name+' '+'message: '+message.content);
 			if (message.channel.name == currentChannel && message.guild.name == currentGuild && message.author.username != client.user.username) {
 				//console.log('currentChannel: '+currentChannel);
-				log(message.author.username+': '+message.content);
-			}
+				log(chalk.red('> ')+chalk.blue(message.author.username)+': '+message.content);
+			} 
 		});
 		
 		client.on('ready', function () {
-      log(chalk.yellow('Welcome back, ') + chalk.green(client.user.username)+'.');
+      console.log(chalk.yellow('Welcome back, ') + chalk.green(client.user.username)+'.');
 			selectServer();	
 	});
 	}
