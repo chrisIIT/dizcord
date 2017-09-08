@@ -5,6 +5,7 @@ const readline				= require('readline');
 const config					= require('./config');
 const chalk 					= require('chalk');
 const log 						= console.log;
+const clear 					= require('clear');
 
 // ------
 // CONFIG
@@ -41,8 +42,8 @@ function chat(channelName) {
 		crlfDelay: Infinity,
 		prompt: chalk.red('> '),
 	});
-	rl.prompt();	
-	
+	//rl.prompt();	
+	//TODO: Figure out how to prompt after fetching messages	
 // SIGINT Handler
 rl.on('SIGINT', ()=> {
 	exitDizcord();
@@ -74,14 +75,17 @@ function handleCommand(cmd) {
 			log(chalk.blue('h: Displays a list of commands'));	
 			log(chalk.blue('s: Switch server and channels'));
 			log(chalk.blue('exit: Quits dizcord'));
-			chat(currentChannel);
+			//chat(currentChannel);
+			rl.prompt();
+			break;
 		}	
 		case 'exit': {
 			exitDizcord();	
 		}
 		case 's': {
 			rl.close();
-			selectServer();			
+			selectServer();
+			break;			
 		}
 	}
 }
@@ -149,11 +153,9 @@ function setCurrentChannel(channel) {
 // @amount can limit the amount of messages to retrieve
 function displayPastMessages(channel, amount) {
 	channel.fetchMessages({limit: amount}).then((messages)=> {
-		rl.pause();
 		messages.array().reverse().forEach((message)=> {
 			log(chalk.red('> ')+chalk.dim(message.author.username)+': '+message.content);
 		});
-		rl.resume();
 	});
 }
 
@@ -186,6 +188,7 @@ function selectServer() {
 				promptChannels(userGuildChnls).then((answer)=> {
 					log(chalk.green('Connected to ')+chalk.blue(answer.channel));
 					setCurrentChannel(answer.channel);
+					clear();
 					displayPastMessages(getChannelObject(answer.channel), 10);
 					return chat(answer.channel);	
 				});
