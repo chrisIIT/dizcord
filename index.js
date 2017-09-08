@@ -1,20 +1,21 @@
 'use strict';
 const Discord 				= require('discord.js');
-var inquirer 				= require('inquirer');
-var readline				= require('readline');
-var config					= require('./config');
+const inquirer 				= require('inquirer');
+const readline				= require('readline');
+const config					= require('./config');
+const chalk 					= require('chalk');
 
 // ------
 // CONFIG
 // ------
-var userToken 			= config.userToken;
+const userToken 			= config.userToken;
 
 // -------
 // GLOBALS
 // -------
-var client 					= new Discord.Client();
-var user 						= client.user;
-var guilds 					= client.guilds;
+const client 					= new Discord.Client();
+const user 						= client.user;
+const guilds 					= client.guilds;
 var userGuilds 			= []; 
 var userGuildChnls 	= [];
 var currentGuild		= '';
@@ -24,7 +25,7 @@ var currentChannel 	= '';
 startDizcord();
 
 function chat(channelName) {
-	var channel = getChannelObject(channelName);	
+	let channel = getChannelObject(channelName);	
 	const rl = readline.createInterface({
 		input: process.stdin,
 		output: process.stdout,
@@ -92,7 +93,7 @@ function getChannelObject(channelName) {
 // refreshes the guildChannel array
 function refreshChannels(guildName) {
 	userGuildChnls.length = 0; //clear channel array
-	var guild = getGuildObject(guildName);
+	let guild = getGuildObject(guildName);
 	return new Promise((resolve,reject)=> {
 		guild.channels.forEach((channel)=> {
 			userGuildChnls.push(channel);
