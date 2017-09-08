@@ -24,6 +24,8 @@ var currentChannel 	= '';
 //---------------------
 startDizcord();
 
+// Starts the REPL
+// reprompts if enter is pressed without any text, checks for commmands via ':'
 function chat(channelName) {
 	let channel = getChannelObject(channelName);	
 	const rl = readline.createInterface({
@@ -50,7 +52,7 @@ function chat(channelName) {
 		});	
 }
 
-
+// Decides what to do when a command is given via the REPL
 function handleCommand(cmd,rl) {
 	let command = cmd.substr(1);
 	switch (command) {
@@ -72,7 +74,7 @@ function handleCommand(cmd,rl) {
 	}
 }
 
-//gets user object from userGuilds array given name
+// Gets user object from userGuilds array given name
 function getGuildObject(guildName) {
 	for (let i=0; i<userGuilds.length; i++) {
 		if (userGuilds[i].name == guildName) {
@@ -81,7 +83,7 @@ function getGuildObject(guildName) {
 	}
 }
 
-//gets channel object from userGuildChnls array given name
+// Gets channel object from userGuildChnls array given name
 function getChannelObject(channelName) {
 	for (let i=0; i<userGuilds.length; i++) {
 		if (userGuildChnls[i].name == channelName) {
@@ -90,7 +92,7 @@ function getChannelObject(channelName) {
 	}
 }
 
-// refreshes the guildChannel array
+// Refreshes the guildChannel array
 function refreshChannels(guildName) {
 	userGuildChnls.length = 0; //clear channel array
 	let guild = getGuildObject(guildName);
@@ -102,7 +104,7 @@ function refreshChannels(guildName) {
 	});
 }
 
-// refreshes the guild array
+// Refreshes the guild array
 function refreshGuilds() {
 	userGuilds.length = 0; //clear guildarray
 	return new Promise((resolve, reject) => {
@@ -113,14 +115,18 @@ function refreshGuilds() {
 	});
 }
 
+// For clarity, sets the currentGuild
 function setCurrentGuild(guild) {
 	currentGuild = guild;
 }
 
+// For clarity, sets the currentChannel
 function setCurrentChannel(channel) {
 	currentChannel = channel;
 }
 
+// Dispays past messages from the server
+// @amount can limit the amount of messages to retrieve
 function displayPastMessages(channel, amount) {
 	channel.fetchMessages({limit: amount}).then((messages)=> {
 		messages.forEach((message)=> {
@@ -129,6 +135,7 @@ function displayPastMessages(channel, amount) {
 	});	
 }
 
+// Inquires which guild to connect to
 function promptGuilds(guilds) {
 	return inquirer.prompt({
 		type: 'list',
@@ -137,7 +144,7 @@ function promptGuilds(guilds) {
 		choices: guilds
 	});
 }
-
+// Inquires which channel from a guild to connect to
 function promptChannels(channels) {
 	return inquirer.prompt({
 		type: 'list',
@@ -147,6 +154,7 @@ function promptChannels(channels) {
 	});
 }
 
+// Connects to a guild (server) and channel and starts the REPL
 function selectServer() {
 	return refreshGuilds().then(()=> {
 		return promptGuilds(userGuilds).then(function (answer) {
@@ -163,6 +171,8 @@ function selectServer() {
 	});
 }
 
+// Initiation function;
+// TODO: cleanup event functions
 function startDizcord() {
     client.login(userToken);
     // Will log discord debug information.
