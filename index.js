@@ -4,6 +4,7 @@ const inquirer 				= require('inquirer');
 const readline				= require('readline');
 const config					= require('./config');
 const chalk 					= require('chalk');
+const log 						= console.log;
 
 // ------
 // CONFIG
@@ -16,56 +17,67 @@ const userToken 			= config.userToken;
 const client 					= new Discord.Client();
 const user 						= client.user;
 const guilds 					= client.guilds;
-var userGuilds 			= []; 
-var userGuildChnls 	= [];
-var currentGuild		= '';
-var currentChannel 	= '';
-
+var userGuilds 				= []; 
+var userGuildChnls 		= [];
+var currentGuild			= '';
+var currentChannel 		= '';
+var rl;
 //---------------------
 startDizcord();
+
+// Before rl is created;
+process.on('SIGINT', ()=> {
+	exitDizcord();
+});
+
 
 // Starts the REPL
 // reprompts if enter is pressed without any text, checks for commmands via ':'
 function chat(channelName) {
 	let channel = getChannelObject(channelName);	
-	const rl = readline.createInterface({
+	rl = readline.createInterface({
 		input: process.stdin,
 		output: process.stdout,
-		crlfDelay: Infinity
+		crlfDelay: Infinity,
+		prompt: chalk.red('> '),
 	});
 	rl.prompt();	
+	
+// SIGINT Handler
+rl.on('SIGINT', ()=> {
+	exitDizcord();
+});
 	rl.on('line', (input)=> {
 		//check if enter is pressed (nothing sent)
 		if (isNaN(`${input}`.charCodeAt(0))) {
 			rl.prompt();
 		} 
 		else {
-			if (`${input}`.charAt(0) == ':') {
+			if (`${input}`.charAt(0) == '/') {
 				rl.pause();		
 				handleCommand(`${input}`,rl);
 			} else {
 				channel.send(`${input}`)
 					.catch(console.error);
 				rl.prompt();
-				}
 			}
-		});	
+		}
+	});	
 }
 
 // Decides what to do when a command is given via the REPL
-function handleCommand(cmd,rl) {
+function handleCommand(cmd) {
 	let command = cmd.substr(1);
 	switch (command) {
 		case 'h': {
-			console.log('Here are the list of available commands:');
-			console.log('h: Displays a list of commands');	
-			console.log('s: Switch server and channels');
-			console.log('exit: Quits dizcord');
+			log(chalk.blue('Here are the list of available commands:'));
+			log(chalk.blue('h: Displays a list of commands'));	
+			log(chalk.blue('s: Switch server and channels'));
+			log(chalk.blue('exit: Quits dizcord'));
 			chat(currentChannel);
 		}	
 		case 'exit': {
-			console.log('Exiting dizcord!');
-			process.exit();
+			exitDizcord();	
 		}
 		case 's': {
 			rl.close();
@@ -74,6 +86,14 @@ function handleCommand(cmd,rl) {
 	}
 }
 
+// Exit routine
+function exitDizcord() {
+	log(chalk.blue('Exiting dizcord!'));
+	if (rl)
+		rl.close(0);
+	process.stdin.destroy();
+	process.exit();
+}
 // Gets user object from userGuilds array given name
 function getGuildObject(guildName) {
 	for (let i=0; i<userGuilds.length; i++) {
@@ -129,10 +149,12 @@ function setCurrentChannel(channel) {
 // @amount can limit the amount of messages to retrieve
 function displayPastMessages(channel, amount) {
 	channel.fetchMessages({limit: amount}).then((messages)=> {
-		messages.forEach((message)=> {
-			console.log('> '+message.author.username+': '+message.content);					
-			});
-	});	
+		rl.pause();
+		messages.array().reverse().forEach((message)=> {
+			log(chalk.red('> ')+chalk.dim(message.author.username)+': '+message.content);
+		});
+		rl.resume();
+	});
 }
 
 // Inquires which guild to connect to
@@ -144,6 +166,7 @@ function promptGuilds(guilds) {
 		choices: guilds
 	});
 }
+
 // Inquires which channel from a guild to connect to
 function promptChannels(channels) {
 	return inquirer.prompt({
@@ -161,7 +184,7 @@ function selectServer() {
 			setCurrentGuild(answer.guild);
 			return refreshChannels(answer.guild).then(()=> {			
 				promptChannels(userGuildChnls).then((answer)=> {
-					console.log('Connected to '+answer.channel);
+					log(chalk.green('Connected to ')+chalk.blue(answer.channel));
 					setCurrentChannel(answer.channel);
 					displayPastMessages(getChannelObject(answer.channel), 10);
 					return chat(answer.channel);	
@@ -186,30 +209,30 @@ function startDizcord() {
     });
     // Emitted when the Client tries to reconnect after being disconnected.
     client.on('reconnecting', function () {
-        console.log('reconnecting');
+        log('reconnecting');
         // sendGeneralNotice('Reconnecting to Discord.');
     });
     // Emitted whenever the client websocket is disconnected.
     client.on('disconnect', function (event) {
-        console.log('disconnected', event);
+        log('disconnected', event);
         //sendGeneralNotice('Discord has been disconnected.');
     });
     
 		// Emitted for general warnings.
     client.on('warn', function (info) {
-        console.log('warn', info);
+        log('warn', info);
     });
     
 		client.on('message', (message)=> {
 		//console.log(message.channel.name+' '+'message: '+message.content);
 			if (message.channel.name == currentChannel && message.guild.name == currentGuild && message.author.username != client.user.username) {
 				//console.log('currentChannel: '+currentChannel);
-				console.log(message.author.username+': '+message.content);
+				log(message.author.username+': '+message.content);
 			}
 		});
 		
 		client.on('ready', function () {
-      console.log('Welcome back, ' + client.user.username+'.');
+      log(chalk.yellow('Welcome back, ') + chalk.green(client.user.username)+'.');
 			selectServer();	
 	});
 	}
